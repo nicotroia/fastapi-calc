@@ -31,16 +31,19 @@ def test_calculator_add(page, fastapi_server):
     """
     # Navigate the browser to the homepage URL of the FastAPI application.
     page.goto('http://localhost:8000')
-    
+
     # Fill in the first number input field (with id 'a') with the value '10'.
     page.fill('#a', '10')
-    
+
     # Fill in the second number input field (with id 'b') with the value '5'.
     page.fill('#b', '5')
-    
+
     # Click the button that has the exact text "Add". This triggers the addition operation.
     page.click('button:text("Add")')
-    
+
+    # Wait for the result to be populated (non-empty text in #result)
+    page.wait_for_function("document.getElementById('result').innerText !== ''")
+
     # Use an assertion to check that the text within the result div (with id 'result') is exactly "Result: 15".
     # This verifies that the addition operation was performed correctly and the result is displayed as expected.
     assert page.inner_text('#result') == 'Calculation Result: 15'
@@ -57,16 +60,19 @@ def test_calculator_divide_by_zero(page, fastapi_server):
     """
     # Navigate the browser to the homepage URL of the FastAPI application.
     page.goto('http://localhost:8000')
-    
+
     # Fill in the first number input field (with id 'a') with the value '10'.
     page.fill('#a', '10')
-    
+
     # Fill in the second number input field (with id 'b') with the value '0', attempting to divide by zero.
     page.fill('#b', '0')
-    
+
     # Click the button that has the exact text "Divide". This triggers the division operation.
     page.click('button:text("Divide")')
-    
+
+    # Wait for the error message to be populated
+    page.wait_for_function("document.getElementById('result').innerText !== ''")
+
     # Use an assertion to check that the text within the result div (with id 'result') is exactly
     # "Error: Cannot divide by zero!". This verifies that the application handles division by zero
     # gracefully and displays the correct error message to the user.
@@ -78,6 +84,7 @@ def test_subtract(page, fastapi_server):
     page.fill('#a', '10')
     page.fill('#b', '3')
     page.click('button:text("Subtract")')
+    page.wait_for_function("document.getElementById('result').innerText !== ''")
     assert page.inner_text('#result') == 'Calculation Result: 7'
 
 @pytest.mark.e2e
@@ -86,6 +93,7 @@ def test_multiply(page, fastapi_server):
     page.fill('#a', '6')
     page.fill('#b', '7')
     page.click('button:text("Multiply")')
+    page.wait_for_function("document.getElementById('result').innerText !== ''")
     assert page.inner_text('#result') == 'Calculation Result: 42'
 
 @pytest.mark.e2e
@@ -94,4 +102,5 @@ def test_divide(page, fastapi_server):
     page.fill('#a', '20')
     page.fill('#b', '4')
     page.click('button:text("Divide")')
+    page.wait_for_function("document.getElementById('result').innerText !== ''")
     assert page.inner_text('#result') == 'Calculation Result: 5'
