@@ -1,116 +1,116 @@
 name: CI/CD
 
 on:
- push:
-   branches: [ main ]
- pull_request:
-   branches: [ main ]
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
- test:
-   runs-on: ubuntu-latest
-   steps:
-     - uses: actions/checkout@v4
-     - uses: actions/setup-python@v5
-       with:
-         python-version: '3.10'
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
-     - uses: actions/cache@v4
-       with:
-         path: |
-           venv
-           ~/.cache/pip
-         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-         restore-keys: |
-           ${{ runner.os }}-pip-
+      - uses: actions/cache@v4
+        with:
+          path: |
+            venv
+            ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
-     - name: Install dependencies
-       run: |
-         python -m venv venv
-         source venv/bin/activate
-         pip install -r requirements.txt
-         playwright install --with-deps chromium
+      - name: Install dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
 
-     - name: Create test directories
-       run: mkdir -p test-results logs
+      - name: Create test directories
+        run: mkdir -p test-results logs
 
-     - name: Run unit tests
-       run: |
-         source venv/bin/activate
-         pytest tests/unit/ \
-           --cov=app \
-           --cov-report=term-missing \
-           --cov-report=html \
-           --junitxml=test-results/unit.xml \
-           -v
+      - name: Run unit tests
+        run: |
+          source venv/bin/activate
+          pytest tests/unit/ \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-report=html \
+            --junitxml=test-results/unit.xml \
+            -v
 
-     - name: Run integration tests
-       run: |
-         source venv/bin/activate
-         pytest tests/integration/ \
-           --junitxml=test-results/integration.xml \
-           -v
+      - name: Run integration tests
+        run: |
+          source venv/bin/activate
+          pytest tests/integration/ \
+            --junitxml=test-results/integration.xml \
+            -v
 
-     - name: Run end-to-end tests
-       run: |
-         source venv/bin/activate
-         pytest tests/e2e/ \
-           --junitxml=test-results/e2e.xml \
-           -v -m e2e || true
+      - name: Run end-to-end tests
+        run: |
+          source venv/bin/activate
+          pytest tests/e2e/ \
+            --junitxml=test-results/e2e.xml \
+            -v -m e2e || true
 
-     - name: Upload coverage report
-       uses: actions/upload-artifact@v4
-       if: always()
-       with:
-         name: coverage-report
-         path: htmlcov/
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: htmlcov/
 
-     - name: Upload test results
-       uses: actions/upload-artifact@v4
-       if: always()
-       with:
-         name: test-results
-         path: test-results/
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results/
 
- security:
-   needs: test
-   runs-on: ubuntu-latest
-   steps:
-     - uses: actions/checkout@v4
-     
-     - name: Build image
-       run: docker build -t app:test .
-     
-     - name: Run Trivy vulnerability scanner
-       uses: aquasecurity/trivy-action@master
-       with:
-         image-ref: 'app:test'
-         format: 'table'
-         exit-code: '1'
-         ignore-unfixed: true
-         severity: 'CRITICAL,HIGH'
+  security:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
- deploy:
-   needs: security
-   if: github.ref == 'refs/heads/main'
-   runs-on: ubuntu-latest
-   environment: production
-   steps:
-     - uses: actions/checkout@v4
-     
-     - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        run: docker build -t app:test .
 
-     - uses: docker/login-action@v3
-       with:
-         username: ${{ secrets.DOCKERHUB_USERNAME }}
-         password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "app:test"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: "CRITICAL,HIGH"
 
-     - uses: docker/build-push-action@v5
-       with:
-         push: true
-         tags: |
-           nicotroia/fastapi-calc:latest
-           nicotroia/fastapi-calc:${{ github.sha }}
-         platforms: linux/amd64,linux/arm64
-         cache-from: type=registry,ref=nicotroia/fastapi-calc:cache
-         cache-to: type=inline,mode=max
+  deploy:
+    needs: security
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: |
+            nicotr014/fastapi-calc:latest
+            nicotr014/fastapi-calc:${{ github.sha }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=registry,ref=nicotr014/fastapi-calc:cache
+          cache-to: type=inline,mode=max
