@@ -6,12 +6,12 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field, field_validator  # Use @validator for Pydantic 1.x
 from fastapi.exceptions import RequestValidationError
 from app.operations import add, subtract, multiply, divide  # Ensure correct import path
+from app.logging_config import configure_logging, get_logger
 import uvicorn
-import logging
 
 # Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+configure_logging(level="INFO")
+logger = get_logger(__name__)
 
 app = FastAPI()
 
@@ -29,7 +29,7 @@ class OperationRequest(BaseModel):
             raise ValueError('Both a and b must be numbers.')
         return value
 
-# Pydantic model for successful response
+# Pydantic model for success response
 class OperationResponse(BaseModel):
     result: float = Field(..., description="The result of the operation")
 
@@ -52,7 +52,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     error_messages = "; ".join([f"{err['loc'][-1]}: {err['msg']}" for err in exc.errors()])
     logger.error(f"ValidationError on {request.url.path}: {error_messages}")
     return JSONResponse(
-        status_code=400,
+        status_code=422,
         content={"error": error_messages},
     )
 
@@ -61,6 +61,7 @@ async def read_root(request: Request):
     """
     Serve the index.html template.
     """
+    logger.debug(f"Root path requested from {request.client.host if request.client else 'unknown'}")
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/add", response_model=OperationResponse, responses={400: {"model": ErrorResponse}})
@@ -69,10 +70,12 @@ async def add_route(operation: OperationRequest):
     Add two numbers.
     """
     try:
+        logger.debug(f"Add request: a={operation.a}, b={operation.b}")
         result = add(operation.a, operation.b)
+        logger.info(f"Add success: {operation.a} + {operation.b} = {result}")
         return OperationResponse(result=result)
     except Exception as e:
-        logger.error(f"Add Operation Error: {str(e)}")
+        logger.error(f"Add error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/subtract", response_model=OperationResponse, responses={400: {"model": ErrorResponse}})
@@ -81,10 +84,12 @@ async def subtract_route(operation: OperationRequest):
     Subtract two numbers.
     """
     try:
+        logger.debug(f"Subtract request: a={operation.a}, b={operation.b}")
         result = subtract(operation.a, operation.b)
+        logger.info(f"Subtract success: {operation.a} - {operation.b} = {result}")
         return OperationResponse(result=result)
     except Exception as e:
-        logger.error(f"Subtract Operation Error: {str(e)}")
+        logger.error(f"Subtract error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/multiply", response_model=OperationResponse, responses={400: {"model": ErrorResponse}})
@@ -93,10 +98,12 @@ async def multiply_route(operation: OperationRequest):
     Multiply two numbers.
     """
     try:
+        logger.debug(f"Multiply request: a={operation.a}, b={operation.b}")
         result = multiply(operation.a, operation.b)
+        logger.info(f"Multiply success: {operation.a} * {operation.b} = {result}")
         return OperationResponse(result=result)
     except Exception as e:
-        logger.error(f"Multiply Operation Error: {str(e)}")
+        logger.error(f"Multiply error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/divide", response_model=OperationResponse, responses={400: {"model": ErrorResponse}})
@@ -105,13 +112,15 @@ async def divide_route(operation: OperationRequest):
     Divide two numbers.
     """
     try:
+        logger.debug(f"Divide request: a={operation.a}, b={operation.b}")
         result = divide(operation.a, operation.b)
+        logger.info(f"Divide success: {operation.a} / {operation.b} = {result}")
         return OperationResponse(result=result)
     except ValueError as e:
-        logger.error(f"Divide Operation Error: {str(e)}")
+        logger.error(f"Divide ValueError: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Divide Operation Internal Error: {str(e)}")
+        logger.error(f"Divide ExceptionError: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 if __name__ == "__main__":
