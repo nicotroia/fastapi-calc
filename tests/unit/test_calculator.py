@@ -232,3 +232,58 @@ def test_divide_by_zero() -> None:
     # Assert that the exception message contains the expected error message
     assert "Cannot divide by zero!" in str(excinfo.value), \
         f"Expected error message 'Cannot divide by zero!', but got '{excinfo.value}'"
+
+
+# ---------------------------------------------
+# Edge Case Tests
+# ---------------------------------------------
+
+@pytest.mark.parametrize(
+    "a, b, expected",
+    [
+        (1_000_000, 2_000_000, 3_000_000),
+        (0.1, 0.2, pytest.approx(0.3)),
+        (-0.0, 0.0, 0.0),
+    ],
+    ids=["add_large_integers", "add_float_precision", "add_negative_zero"],
+)
+def test_add_edge_cases(a: Number, b: Number, expected) -> None:
+    assert add(a, b) == expected
+
+
+@pytest.mark.parametrize(
+    "a, b, expected",
+    [
+        (0, 1_000_000, -1_000_000),
+        (1.5, 1.5, 0.0),
+    ],
+    ids=["subtract_zero_minus_large", "subtract_same_floats"],
+)
+def test_subtract_edge_cases(a: Number, b: Number, expected: Number) -> None:
+    assert subtract(a, b) == expected
+
+
+@pytest.mark.parametrize(
+    "a, b, expected",
+    [
+        (0, 1_000_000, 0),
+        (-1, -1, 1),
+        (0.5, 0.5, 0.25),
+    ],
+    ids=["multiply_zero_times_large", "multiply_neg_neg", "multiply_fractions"],
+)
+def test_multiply_edge_cases(a: Number, b: Number, expected: Number) -> None:
+    assert multiply(a, b) == expected
+
+
+@pytest.mark.parametrize(
+    "a, b, expected",
+    [
+        (1, 3, pytest.approx(0.3333333333333333)),
+        (-10, -2, 5.0),
+        (0, 100, 0.0),
+    ],
+    ids=["divide_repeating_decimal", "divide_neg_by_neg", "divide_zero_numerator"],
+)
+def test_divide_edge_cases(a: Number, b: Number, expected) -> None:
+    assert divide(a, b) == expected
