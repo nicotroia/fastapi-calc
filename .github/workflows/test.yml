@@ -109,8 +109,8 @@ jobs:
        with:
          push: true
          tags: |
-           kaw393939/601_module8:latest
-           kaw393939/601_module8:${{ github.sha }}
+           nicotroia/fastapi-calc:latest
+           nicotroia/fastapi-calc:${{ github.sha }}
          platforms: linux/amd64,linux/arm64
-         cache-from: type=registry,ref=kaw393939/601_module8:cache
+         cache-from: type=registry,ref=nicotroia/fastapi-calc:cache
          cache-to: type=inline,mode=max
